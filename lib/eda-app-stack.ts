@@ -60,6 +60,11 @@ const newImageTopic = new sns.Topic(this, "NewImageTopic", {
 
 newImageTopic.addSubscription(new subs.SqsSubscription(imageProcessQueue));
 newImageTopic.addSubscription(new subs.SqsSubscription(mailerQ));
+imagesBucket.addEventNotification(
+  s3.EventType.OBJECT_REMOVED,
+  new s3n.SnsDestination(newImageTopic)
+);
+
 
     // newImageTopic.addSubscription(
     //   new subs.SqsSubscription(imageProcessQueue)
