@@ -1,5 +1,6 @@
 /* eslint-disable import/extensions, import/no-absolute-path */
 import { SQSHandler } from "aws-lambda";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
