@@ -18,7 +18,7 @@ type ContactDetails = {
 const client = new SESClient({ region: SES_REGION });
 export const handler: SQSHandler = async (event: any) => {
     //logs for error handling if needed
-  console.log("SES_EMAIL_FROM:", SES_EMAIL_FROM);
+  console.log("SES_EMAIL_FROM:", SES_EMAIL_FROM); // Log environment variables
   console.log("SES_EMAIL_TO:", SES_EMAIL_TO);
   console.log("SES_REGION:", SES_REGION);
   console.log("Event:", JSON.stringify(event));
@@ -31,14 +31,16 @@ export const handler: SQSHandler = async (event: any) => {
         const s3e = messageRecord.s3;
         const srcBucket = s3e.bucket.name;
         //object may have spaces and or/ non asci characters in it.
-        const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));
+        const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));// Decode object key with spaces
         const fileExtension = srcKey.split('.').pop()?.toLowerCase();
-        if (fileExtension !== "jpeg" && fileExtension !== "png") {
+        if (fileExtension !== "jpeg" && fileExtension !== "png") {// Check for invalid file types
           try {
             const name = "The Photo Album";
             const message = `Image ${srcKey} has been regected. It is an invalid file type`;
             const params = sendEmailParams({ name, email: SES_EMAIL_FROM, message });
             console.log("SES Email Params:", JSON.stringify(params, null, 2));
+                        // Log SES email parameters
+
             await client.send(new SendEmailCommand(params));
           } catch (error) {
             console.log("ERROR:", error);
@@ -50,6 +52,7 @@ export const handler: SQSHandler = async (event: any) => {
 };
 
 //same as other masiler lambda 
+// Create SES email params
 
 function sendEmailParams({ name, email, message }: ContactDetails): SendEmailCommandInput {
   return {
@@ -71,6 +74,8 @@ function sendEmailParams({ name, email, message }: ContactDetails): SendEmailCom
     Source: SES_EMAIL_FROM,
   };
 }
+// Generate HTML content for rejection email
+
 function getHtmlContent({ name, email, message }: ContactDetails): string {
   return `
     <html>

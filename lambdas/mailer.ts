@@ -32,10 +32,11 @@ export const handler: SQSHandler = async (event: any) => {
         const s3e = messageRecord.s3;
         const srcBucket = s3e.bucket.name;
         // Object key may have spaces or unicode non-ASCII characters.
-        const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));
+        const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));//decode key
         
         const fileType = srcKey.split('.').pop()?.toLowerCase();
-        
+                // Handle valid image types
+
         if (fileType === "jpeg" || fileType === "png") {
           try {
             const { name, email, message }: ContactDetails = {
@@ -47,9 +48,13 @@ export const handler: SQSHandler = async (event: any) => {
             await client.send(new SendEmailCommand(params));
             console.log(`Successfully sent email for file: ${srcKey}`);
           } catch (error: unknown) {
+                        // Log email sending errors
+
             console.log("ERROR is: ", error);
           }
         } else {
+                    // Handle invalid file type
+
           try {
             const { name, email, message }: ContactDetails = {
               name: "The Photo Album",
@@ -60,6 +65,8 @@ export const handler: SQSHandler = async (event: any) => {
             await client.send(new SendEmailCommand(params));
             console.log(`Rejection email sent for file: ${srcKey}`);
           } catch (error: unknown) {
+                        // Log rejection errors
+
             console.log("ERROR is: ", error);
           }
         }
@@ -67,6 +74,7 @@ export const handler: SQSHandler = async (event: any) => {
     }
   }
 };
+// Construct email parameters
 
 function sendEmailParams({ name, email, message }: ContactDetails) {
   const parameters: SendEmailCommandInput = {
@@ -89,6 +97,7 @@ function sendEmailParams({ name, email, message }: ContactDetails) {
   };
   return parameters;
 }
+// Generate HTML content for email
 
 function getHtmlContent({ name, email, message }: ContactDetails):string {
   return `
@@ -105,13 +114,3 @@ function getHtmlContent({ name, email, message }: ContactDetails):string {
   `;
 }
 
-//  // For demo purposes - not used here.
-// function getTextContent({ name, email, message }: ContactDetails) {
-//   return `
-//     Received an Email. 📬
-//     Sent from:
-//         👤 ${name}
-//         ✉️ ${email}
-//     ${message}
-//   `;
- 
