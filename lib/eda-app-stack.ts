@@ -46,6 +46,8 @@ export class EDAAppStack extends cdk.Stack {
 
 
  // Integration infrastructure
+
+ 
  const imageProcessQueue = new sqs.Queue(this, "img-created-queue", {
   receiveMessageWaitTime: cdk.Duration.seconds(10),
 });
@@ -55,10 +57,14 @@ const mailerQ = new sqs.Queue(this, "mailer-queue", {
 const newImageTopic = new sns.Topic(this, "NewImageTopic", {
   displayName: "New Image topic",
 }); 
-    newImageTopic.addSubscription(
-      new subs.SqsSubscription(imageProcessQueue)
-    );
-    newImageTopic.addSubscription(new subs.SqsSubscription(mailerQ));
+
+newImageTopic.addSubscription(new subs.SqsSubscription(imageProcessQueue));
+newImageTopic.addSubscription(new subs.SqsSubscription(mailerQ));
+
+    // newImageTopic.addSubscription(
+    //   new subs.SqsSubscription(imageProcessQueue)
+    // );
+    // newImageTopic.addSubscription(new subs.SqsSubscription(mailerQ));
 
 
 // Lambda functions
@@ -93,6 +99,16 @@ const rejectionMailerFn = new lambdanode.NodejsFunction(this, "rejection-mailer-
   entry: `${__dirname}/../lambdas/rejectionMailer.ts`,
 });
 
+const updateTableFn = new lambdanode.NodejsFunction(this, "updateTable-function", {
+  runtime: lambda.Runtime.NODEJS_18_X,
+  memorySize: 1024,
+  timeout: cdk.Duration.seconds(10),
+  entry: `${__dirname}/../lambdas/updateTable.ts`,
+  environment: {
+    REGION: "eu-west-1",
+  },
+});
+
 
 // S3 --> SQS
 imagesBucket.addEventNotification(
@@ -118,6 +134,16 @@ const rejectionMailEventSource = new events.SqsEventSource(mailerQ, {
 processImageFn.addEventSource(newImageEventSource);
 mailerFn.addEventSource(newImageMailEventSource);
 rejectionMailerFn.addEventSource(rejectionMailEventSource);
+
+newImageTopic.addSubscription(
+  new subs.LambdaSubscription(updateTableFn, {
+    filterPolicy: {
+      metadata_type: sns.SubscriptionFilter.stringFilter({
+        allowlist: ["Caption", "Date", "Photographer"],
+      }),
+    },
+  })
+);
 
 
 // Permissions
