@@ -39,7 +39,7 @@ export class EDAAppStack extends cdk.Stack {
 
     // Output
     
-    new cdk.CfnOutput(this, "bucketName", {
+    new cdk.CfnOutput(this, "bucketName1", {
       value: imagesBucket.bucketName,
     });
   
