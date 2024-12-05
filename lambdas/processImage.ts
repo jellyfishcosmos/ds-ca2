@@ -2,7 +2,7 @@
 import { SQSHandler } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
 const ddbDocClient = createDDbDocClient();
 
 
@@ -77,7 +77,7 @@ const deleteImageFromDynamoDB = async (key: string) => {
   const params = {
     TableName: "Images",
     Key: {
-      ImageName: key, // Ensure this matches the DynamoDB table's primary key
+      ImageName: key, //must match table 
     },
   };
 
