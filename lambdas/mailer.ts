@@ -21,69 +21,55 @@ type ContactDetails = {
 const client = new SESClient({ region: SES_REGION});
 
 export const handler: SQSHandler = async (event: any) => {
-  console.log("SES_EMAIL_FROM:", SES_EMAIL_FROM);
-  console.log("SES_EMAIL_TO:", SES_EMAIL_TO);
-  console.log("SES_REGION:", SES_REGION);
-  console.log("Event:", JSON.stringify(event));
-
+  console.log("Event ", event);
   for (const record of event.Records) {
     const recordBody = JSON.parse(record.body);
     const snsMessage = JSON.parse(recordBody.Message);
 
     if (snsMessage.Records) {
       console.log("Record body ", JSON.stringify(snsMessage));
-
       for (const messageRecord of snsMessage.Records) {
         const s3e = messageRecord.s3;
         const srcBucket = s3e.bucket.name;
         // Object key may have spaces or unicode non-ASCII characters.
         const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));
-        try {
-          const name = "The Photo Album";
-          const message = `We received your Image. Its URL is s3://${srcBucket}/${srcKey}`;
-          const params = sendEmailParams({ name, email: SES_EMAIL_FROM, message });
-          console.log("SES Email Params:", JSON.stringify(params, null, 2));
-
-          
-       
-          await client.send(new SendEmailCommand(params));
-        } catch (error: unknown) {
-          console.log("ERROR is: ", error);
-          // return;
+        
+        const fileType = srcKey.split('.').pop()?.toLowerCase();
+        
+        if (fileType === "jpeg" || fileType === "png") {
+          try {
+            const { name, email, message }: ContactDetails = {
+              name: "The Photo Album",
+              email: SES_EMAIL_FROM,
+              message: `We received your Image. Its URL is s3://${srcBucket}/${srcKey}`,
+            };
+            const params = sendEmailParams({ name, email, message });
+            await client.send(new SendEmailCommand(params));
+            console.log(`Successfully sent email for file: ${srcKey}`);
+          } catch (error: unknown) {
+            console.log("ERROR is: ", error);
+          }
+        } else {
+          try {
+            const { name, email, message }: ContactDetails = {
+              name: "The Photo Album",
+              email: SES_EMAIL_FROM,
+              message: `Image ${srcKey} has been rejected because of an invalid file type`,
+            };
+            const params = sendEmailParams({ name, email, message });
+            await client.send(new SendEmailCommand(params));
+            console.log(`Rejection email sent for file: ${srcKey}`);
+          } catch (error: unknown) {
+            console.log("ERROR is: ", error);
+          }
         }
       }
     }
   }
-;
+};
 
-// function sendEmailParams({ name, email, message }: ContactDetails) {
-//   const parameters: SendEmailCommandInput = {
-//     Destination: {
-//       ToAddresses: [SES_EMAIL_TO],
-//     },
-//     Message: {
-//       Body: {
-//         Html: {
-//           Charset: "UTF-8",
-//           Data: getHtmlContent({ name, email, message }),
-//         },
-//         // Text: {.           // For demo purposes
-//         //   Charset: "UTF-8",
-//         //   Data: getTextContent({ name, email, message }),
-//         // },
-//       },
-//       Subject: {
-//         Charset: "UTF-8",
-//         Data: `New image Upload`,
-//       },
-//     },
-//     Source: SES_EMAIL_FROM,
-//   };
-//   return parameters;
-// }
-
-function sendEmailParams({ name, email, message }: ContactDetails): SendEmailCommandInput {
-  return {
+function sendEmailParams({ name, email, message }: ContactDetails) {
+  const parameters: SendEmailCommandInput = {
     Destination: {
       ToAddresses: [SES_EMAIL_TO],
     },
@@ -96,11 +82,12 @@ function sendEmailParams({ name, email, message }: ContactDetails): SendEmailCom
       },
       Subject: {
         Charset: "UTF-8",
-        Data: `New Image Upload`,
+        Data: `New image Upload`,
       },
     },
     Source: SES_EMAIL_FROM,
   };
+  return parameters;
 }
 
 function getHtmlContent({ name, email, message }: ContactDetails):string {
@@ -127,4 +114,4 @@ function getHtmlContent({ name, email, message }: ContactDetails):string {
 //         ✉️ ${email}
 //     ${message}
 //   `;
- }
+ 
