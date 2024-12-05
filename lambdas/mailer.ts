@@ -127,4 +127,4 @@ function getHtmlContent({ name, email, message }: ContactDetails):string {
 //         ✉️ ${email}
 //     ${message}
 //   `;
-// }
+ }
